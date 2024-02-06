@@ -12,12 +12,13 @@ import jakarta.xml.bind.annotation.XmlTransient;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import de.gurkenlabs.litiengine.environment.tilemap.IMapImage;
+import java.nio.file.Path;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class MapImage extends CustomPropertyProvider implements IMapImage {
 
   @XmlAttribute
-  private String source;
+  private Path source;
 
   @XmlAttribute(name = "trans")
   @XmlJavaTypeAdapter(ColorAdapter.class)
@@ -85,7 +86,7 @@ public class MapImage extends CustomPropertyProvider implements IMapImage {
   }
 
   @Override
-  public String getSource() {
+  public Path getSource() {
     return this.source;
   }
 
@@ -100,7 +101,7 @@ public class MapImage extends CustomPropertyProvider implements IMapImage {
   }
 
   @Override
-  public void setSource(String source) {
+  public void setSource(Path source) {
     this.source = source;
   }
 

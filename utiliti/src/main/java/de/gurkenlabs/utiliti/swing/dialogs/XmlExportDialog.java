@@ -6,6 +6,7 @@ import de.gurkenlabs.litiengine.util.io.XmlUtilities;
 import de.gurkenlabs.utiliti.components.Editor;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,27 +30,23 @@ public final class XmlExportDialog {
   public static <T> void export(
       T object, String name, String filename, String extension, Consumer<String> consumer) {
     JFileChooser chooser;
-    try {
-      String source = Editor.instance().getProjectPath();
-      chooser = new JFileChooser(source != null ? source : new File(".").getCanonicalPath());
-      chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-      chooser.setDialogType(JFileChooser.SAVE_DIALOG);
-      chooser.setDialogTitle("Export " + name);
-      FileFilter filter =
-          new FileNameExtensionFilter("." + extension + " - " + name + " XML", extension);
-      chooser.setFileFilter(filter);
-      chooser.addChoosableFileFilter(filter);
-      chooser.setSelectedFile(new File(filename + "." + extension));
+    Path source = Editor.instance().getProjectPath();
+    chooser = new JFileChooser(source.toFile());
+    chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+    chooser.setDialogType(JFileChooser.SAVE_DIALOG);
+    chooser.setDialogTitle("Export " + name);
+    FileFilter filter =
+        new FileNameExtensionFilter("." + extension + " - " + name + " XML", extension);
+    chooser.setFileFilter(filter);
+    chooser.addChoosableFileFilter(filter);
+    chooser.setSelectedFile(new File(filename + "." + extension));
 
-      int result = chooser.showSaveDialog(Game.window().getRenderComponent());
-      if (result == JFileChooser.APPROVE_OPTION) {
-        File newFile = XmlUtilities.save(object, chooser.getSelectedFile().toString(), extension);
-        String dir = FileUtilities.getParentDirPath(newFile.getAbsolutePath());
-        consumer.accept(dir);
-        log.log(Level.INFO, "Exported {0} {1} to {2}", new Object[] {name, filename, newFile});
-      }
-    } catch (IOException e) {
-      log.log(Level.SEVERE, e.getMessage(), e);
+    int result = chooser.showSaveDialog(Game.window().getRenderComponent());
+    if (result == JFileChooser.APPROVE_OPTION) {
+      File newFile = XmlUtilities.save(object, chooser.getSelectedFile().toString(), extension);
+      String dir = FileUtilities.getParentDirPath(newFile.getAbsolutePath());
+      consumer.accept(dir);
+      log.log(Level.INFO, "Exported {0} {1} to {2}", new Object[] {name, filename, newFile});
     }
   }
 }

@@ -1,12 +1,8 @@
 package de.gurkenlabs.litiengine.util.io;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,55 +10,51 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 
 class FileUtilitiesTests {
 
   @TempDir
-  File tempDir;
+  Path tempDir;
 
   @TempDir
   Path tempPath;
 
   @Test
   void testDeleteNoneDir() {
-    File dir = new File("/test/test2/");
-    assertFalse(FileUtilities.deleteDir(dir));
+    //    arrange
+    Path dir = Path.of("/test/test2/");
+    //    act
+    FileUtilities.deleteDir(dir);
+    //    assert
+    assertFalse(Files.exists(dir));
   }
 
-  @Test
-  void testDeleteExistingDirZeroChildren() {
-    assertTrue(FileUtilities.deleteDir(tempDir));
-  }
-
-  @Test
-  void testDeleteExistingDir() throws IOException {
-    File file1 = new File(tempDir, "file1.txt");
-    file1.createNewFile();
-    assertTrue(FileUtilities.deleteDir(tempDir));
-  }
 
   @Test
   void testDeleteExistingDirNewFiles() throws IOException {
     // arrange
-    File file1 = new File(tempDir, "file1.txt");
-    File file2 = new File(tempDir, "file2.txt");
+    Files.createFile(tempDir.resolve("file1.txt"));
+    Files.createFile(tempDir.resolve("file2.txt"));
 
-    // act
-    file1.createNewFile();
-    file2.createNewFile();
+    //    act
+    FileUtilities.deleteDir(tempDir);
 
     // assert
-    assertTrue(FileUtilities.deleteDir(tempDir));
+    assertFalse(Files.exists(tempDir));
   }
 
   @Test
   void testDeleteExistingDirNoChildren() {
-    assertFalse(FileUtilities.deleteDir(new File("")));
+    //    act
+    FileUtilities.deleteDir(tempDir);
+    //    assert
+    assertFalse(Files.exists(tempDir));
   }
 
   @Test
@@ -71,11 +63,10 @@ class FileUtilitiesTests {
     Files.createFile(tempPath.resolve("notToBeFound.pdf"));
     Path testFile = Files.createFile(tempPath.resolve("test.txt"));
 
-    List<String> fileNames = new LinkedList<>(Collections.emptyList());
-    List<String> expectedFiles = new LinkedList<>(Collections.singletonList(testFile.toAbsolutePath().toString()));
+    List<Path> expectedFiles = new LinkedList<>(Collections.singletonList(testFile));
 
     // act
-    List<String> actualFiles = FileUtilities.findFilesByExtension(fileNames, tempPath, "txt");
+    List<Path> actualFiles = FileUtilities.findFiles(tempPath, "txt");
 
     // assert
     assertEquals(expectedFiles, actualFiles);
@@ -87,11 +78,10 @@ class FileUtilitiesTests {
     Path subDirectory = Files.createDirectories(tempPath.resolve("test"));
     Path textFileSub = Files.createFile(subDirectory.resolve("test.txt"));
 
-    List<String> fileNames = new LinkedList<>(Collections.emptyList());
-    List<String> expectedFiles = new LinkedList<>(Collections.singletonList(textFileSub.toAbsolutePath().toString()));
+    List<Path> expectedFiles = new LinkedList<>(Collections.singletonList(textFileSub.toAbsolutePath()));
 
     // act
-    List<String> actualFiles = FileUtilities.findFilesByExtension(fileNames, tempPath, "txt");
+    List<Path> actualFiles = FileUtilities.findFiles(tempPath, ".txt");
 
     // assert
     assertEquals(expectedFiles, actualFiles);
@@ -107,10 +97,9 @@ class FileUtilitiesTests {
     }
     Files.createFile(testFile);
 
-    List<String> fileNames = new LinkedList<>(Collections.emptyList());
 
     // act
-    List<String> actualFiles = FileUtilities.findFilesByExtension(fileNames, tempPath, "txt");
+    List<Path> actualFiles = FileUtilities.findFiles(tempPath, "txt");
 
     // assert
     assertEquals(0, actualFiles.size());
@@ -185,11 +174,11 @@ class FileUtilitiesTests {
 
   private static Stream<Arguments> getCombinedPaths() {
     return Stream.of(Arguments.of("/test/test2/", "somepath/123/456/", "/test/test2/somepath/123/456/"),
-        Arguments.of("somepath/123/456/", "./test/test2", "somepath/123/456/test/test2"),
-        Arguments.of("../somepath/123/456/", "./test/test2", "../somepath/123/456/test/test2"),
-        Arguments.of("../test/test2/", "./test/test2", "../test/test2/test/test2"),
-        Arguments.of("somepath/123/456/", "../file.txt", "somepath/123/file.txt"),
-        Arguments.of("somepath/123/456/", "file.txt", "somepath/123/456/file.txt"));
+      Arguments.of("somepath/123/456/", "./test/test2", "somepath/123/456/test/test2"),
+      Arguments.of("../somepath/123/456/", "./test/test2", "../somepath/123/456/test/test2"),
+      Arguments.of("../test/test2/", "./test/test2", "../test/test2/test/test2"),
+      Arguments.of("somepath/123/456/", "../file.txt", "somepath/123/file.txt"),
+      Arguments.of("somepath/123/456/", "file.txt", "somepath/123/456/file.txt"));
   }
 
   private static Stream<Arguments> getCombinedThreePaths() {
@@ -198,11 +187,11 @@ class FileUtilitiesTests {
 
   private static Stream<Arguments> getCombinePathsWin() {
     return Stream.of(Arguments.of("\\test\\test2\\", "somepath/123/456/", "/test/test2/somepath/123/456/"),
-        Arguments.of("somepath/123/456/", "test\\test2\\", "somepath/123/456/test/test2/"),
-        Arguments.of("../somepath/123/456/", "test\\test2\\", "../somepath/123/456/test/test2/"),
-        Arguments.of("..\\test\\test2\\", "test\\test2\\", "../test/test2/test/test2/"),
-        Arguments.of("somepath/123/456/", "..\\file.txt", "somepath/123/file.txt"),
-        Arguments.of("somepath/123/456/", "file.txt", "somepath/123/456/file.txt"));
+      Arguments.of("somepath/123/456/", "test\\test2\\", "somepath/123/456/test/test2/"),
+      Arguments.of("../somepath/123/456/", "test\\test2\\", "../somepath/123/456/test/test2/"),
+      Arguments.of("..\\test\\test2\\", "test\\test2\\", "../test/test2/test/test2/"),
+      Arguments.of("somepath/123/456/", "..\\file.txt", "somepath/123/file.txt"),
+      Arguments.of("somepath/123/456/", "file.txt", "somepath/123/456/file.txt"));
   }
 
   private static Stream<Arguments> getCombineThreePathsWin() {
@@ -211,29 +200,29 @@ class FileUtilitiesTests {
 
   private static Stream<Arguments> getFileNames() {
     return Stream.of(Arguments.of("C:\\test\\test2\\test.txt", "test"), Arguments.of("/somepath/123/456/test.txt", "test"),
-        Arguments.of("/somepath/123/456/test", "test"), Arguments.of("/somepath/123/456/", ""), Arguments.of("/somep.ath/1.23/45.6/test.txt", "test"),
-        Arguments.of("/somep.ath/1.23/45.6/", ""));
+      Arguments.of("/somepath/123/456/test", "test"), Arguments.of("/somepath/123/456/", ""), Arguments.of("/somep.ath/1.23/45.6/test.txt", "test"),
+      Arguments.of("/somep.ath/1.23/45.6/", ""));
   }
 
   private static Stream<Arguments> getGetExtension() {
     return Stream.of(Arguments.of("C:\\test\\test2\\test.txt", "txt"), Arguments.of("/somepath/123/456/test.123456789", "123456789"),
-        Arguments.of("/somepath/123/456/test", ""), Arguments.of("/somepath/123/456/", ""), Arguments.of("/somepath/1.23/4.56/", ""));
+      Arguments.of("/somepath/123/456/test", ""), Arguments.of("/somepath/123/456/", ""), Arguments.of("/somepath/1.23/4.56/", ""));
   }
 
   private static Stream<Arguments> getGetHumanReadableByteCount() {
     return Stream.of(Arguments.of(0, "0 bytes"), Arguments.of(1023, "1023 bytes"), Arguments.of(1024, "1.0 KiB"), Arguments.of(1025, "1.0 KiB"),
-        Arguments.of(1024 + 1024 / 2, "1.5 KiB"), Arguments.of(1048576, "1.0 MiB"), Arguments.of(1073741824, "1.0 GiB"),
-        Arguments.of(1099511627776L, "1.0 TiB"), Arguments.of(1125899906842624L, "1.0 PiB"),
-        Arguments.of(1125899906842624L + 1125899906842624L / 2, "1.5 PiB"), Arguments.of(1152921504606846976L, "1.0 EiB"),
-        Arguments.of(Long.MAX_VALUE, "8.0 EiB"));
+      Arguments.of(1024 + 1024 / 2, "1.5 KiB"), Arguments.of(1048576, "1.0 MiB"), Arguments.of(1073741824, "1.0 GiB"),
+      Arguments.of(1099511627776L, "1.0 TiB"), Arguments.of(1125899906842624L, "1.0 PiB"),
+      Arguments.of(1125899906842624L + 1125899906842624L / 2, "1.5 PiB"), Arguments.of(1152921504606846976L, "1.0 EiB"),
+      Arguments.of(Long.MAX_VALUE, "8.0 EiB"));
   }
 
   private static Stream<Arguments> getGetHumanReadableByteCountDecimal() {
     return Stream.of(Arguments.of(1152921504606846976L, true, "1.2 EB"), Arguments.of(0, true, "0 bytes"), Arguments.of(999, true, "999 bytes"),
-        Arguments.of(1001, true, "1.0 KB"), Arguments.of(1000, true, "1.0 KB"), Arguments.of(1000 + 1000 / 2, true, "1.5 KB"),
-        Arguments.of(1000000, true, "1.0 MB"), Arguments.of(1000000000, true, "1.0 GB"), Arguments.of(1000000000000L, true, "1.0 TB"),
-        Arguments.of(1000000000000000L, true, "1.0 PB"), Arguments.of(1000000000000000L + 1000000000000000L / 2, true, "1.5 PB"),
-        Arguments.of(1000000000000000000L, true, "1.0 EB"), Arguments.of(Long.MAX_VALUE, true, "9.2 EB"),
-        Arguments.of(1000000000000000000L, false, "888.2 PiB"));
+      Arguments.of(1001, true, "1.0 KB"), Arguments.of(1000, true, "1.0 KB"), Arguments.of(1000 + 1000 / 2, true, "1.5 KB"),
+      Arguments.of(1000000, true, "1.0 MB"), Arguments.of(1000000000, true, "1.0 GB"), Arguments.of(1000000000000L, true, "1.0 TB"),
+      Arguments.of(1000000000000000L, true, "1.0 PB"), Arguments.of(1000000000000000L + 1000000000000000L / 2, true, "1.5 PB"),
+      Arguments.of(1000000000000000000L, true, "1.0 EB"), Arguments.of(Long.MAX_VALUE, true, "9.2 EB"),
+      Arguments.of(1000000000000000000L, false, "888.2 PiB"));
   }
 }

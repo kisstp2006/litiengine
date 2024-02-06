@@ -6,6 +6,7 @@ import de.gurkenlabs.litiengine.util.ColorHelper;
 import de.gurkenlabs.litiengine.util.MathUtilities;
 import de.gurkenlabs.utiliti.Style.Theme;
 import java.awt.Color;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,8 +40,8 @@ public class UserPreferences extends ConfigurationGroup {
   private String gridColor;
   private int snapDivision;
 
-  private String lastGameFile;
-  private String[] lastOpenedFiles;
+  private Path lastGameFile;
+  private Path[] lastOpenedFiles;
   private float uiScale;
 
   private Theme theme;
@@ -53,8 +54,8 @@ public class UserPreferences extends ConfigurationGroup {
     this.snapToGrid = true;
     this.renderBoundingBoxes = true;
     this.renderNames = true;
-    this.lastGameFile = "";
-    this.lastOpenedFiles = new String[10];
+    this.lastGameFile = Path.of(".");
+    this.lastOpenedFiles = new Path[10];
     this.compressFile = false;
     this.gridLineWidth = 1.0f;
     this.gridColor = ColorHelper.encode(Style.COLOR_DEFAULT_GRID);
@@ -63,9 +64,9 @@ public class UserPreferences extends ConfigurationGroup {
     this.setTheme(Theme.DARK);
   }
 
-  public void addOpenedFile(String str) {
+  public void addOpenedFile(Path str) {
     // ensure max 10 elements
-    List<String> newFiles = new ArrayList<>();
+    List<Path> newFiles = new ArrayList<>();
     for (int i = 0; i <= this.lastOpenedFiles.length; i++) {
       newFiles.add(null);
     }
@@ -76,7 +77,7 @@ public class UserPreferences extends ConfigurationGroup {
         continue;
       }
 
-      if (this.lastOpenedFiles[i - 1] == null || this.lastOpenedFiles[i - 1].equals("null")) {
+      if (this.lastOpenedFiles[i - 1] == null) {
         newFiles.add(i, null);
       } else {
         newFiles.add(i, this.lastOpenedFiles[i - 1]);
@@ -84,10 +85,10 @@ public class UserPreferences extends ConfigurationGroup {
     }
 
     // add the new element
-    newFiles.add(0, str);
+    newFiles.addFirst(str);
     newFiles.removeAll(Collections.singleton(null));
     // clear array
-    this.lastOpenedFiles = new String[10];
+    this.lastOpenedFiles = new Path[10];
 
     // fill array
     for (int i = 0; i < newFiles.size(); i++) {
@@ -159,23 +160,23 @@ public class UserPreferences extends ConfigurationGroup {
     this.renderMapIds = renderIds;
   }
 
-  public String getLastGameFile() {
-    return this.lastGameFile;
+  public Path getLastGameFile() {
+    return lastGameFile;
   }
 
-  public void setLastGameFile(String lastGameFile) {
+  public void setLastGameFile(Path lastGameFile) {
     this.lastGameFile = lastGameFile;
   }
 
-  public String[] getLastOpenedFiles() {
-    return this.lastOpenedFiles;
+  public Path[] getLastOpenedFiles() {
+    return lastOpenedFiles;
   }
 
   public void clearOpenedFiles() {
-    this.lastOpenedFiles = new String[10];
+    this.lastOpenedFiles = new Path[10];
   }
 
-  public void setLastOpenedFiles(String[] lastOpenedFiles) {
+  public void setLastOpenedFiles(Path[] lastOpenedFiles) {
     this.lastOpenedFiles = lastOpenedFiles;
   }
 

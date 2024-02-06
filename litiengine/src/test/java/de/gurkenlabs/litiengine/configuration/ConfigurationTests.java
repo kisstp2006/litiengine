@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.gurkenlabs.litiengine.util.io.FileUtilities;
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -24,11 +26,10 @@ class ConfigurationTests {
 
   @AfterEach
   public void deleteConfigFile() {
-    if (config != null) {
-      final File configFile = new File(config.getFileName());
-      if (configFile.exists()) {
-        assertTrue(configFile.delete());
-      }
+    try {
+      assertTrue(Files.deleteIfExists(config.getFilePath()));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -54,20 +55,20 @@ class ConfigurationTests {
     config.load();
 
     // act, assert
-    assertTrue(new File(config.getFileName()).exists());
+    assertTrue(Files.exists(config.getFilePath()));
   }
 
   @Test
   void testCustomFileName() {
     // arrange
-    final String testFileName = UUID.randomUUID().toString() + ".properties";
+    final Path testFileName = Path.of(UUID.randomUUID() + ".properties");
 
     // act
     config = new Configuration(testFileName);
     config.load();
 
     // assert
-    assertTrue(new File(testFileName).exists());
+    assertTrue(Files.exists(testFileName));
   }
 
   @Test
@@ -79,7 +80,7 @@ class ConfigurationTests {
     // act
     config.load();
     final TestConfigurationGroup configGroup =
-        config.getConfigurationGroup(TestConfigurationGroup.class);
+      config.getConfigurationGroup(TestConfigurationGroup.class);
 
     // assert
     assertEquals(100, configGroup.getTestInt());
@@ -97,12 +98,12 @@ class ConfigurationTests {
 
   private enum TEST {
     TEST1,
-    TEST2;
+    TEST2
   }
 
   @ConfigurationGroupInfo(prefix = "test-prefix")
   @SuppressWarnings("unused")
-  private class TestConfigurationGroup extends ConfigurationGroup {
+  private static class TestConfigurationGroup extends ConfigurationGroup {
     private int testInt = 100;
     private byte testByte = 101;
     private short testShort = 102;

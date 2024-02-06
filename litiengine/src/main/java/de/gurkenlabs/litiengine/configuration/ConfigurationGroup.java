@@ -3,6 +3,7 @@ package de.gurkenlabs.litiengine.configuration;
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.Properties;
@@ -136,7 +137,18 @@ public abstract class ConfigurationGroup {
             value = value.replace("null", "");
             properties.setProperty(propertyKey, value);
           }
-        } else if (field.getType().isEnum()) {
+        } else if (field.getType().equals(Path.class)) {
+          properties.setProperty(propertyKey, field.get(this).toString());
+        }else if (field.getType().equals(Path[].class)) {
+          if (field.get(this) == null) {
+            properties.setProperty(propertyKey, "");
+          } else {
+            String[] arr = (String[]) field.get(this);
+            String value = String.join(",", arr);
+            value = value.replace("null", "");
+            properties.setProperty(propertyKey, value);
+          }
+        }else if (field.getType().isEnum()) {
           Object val = field.get(this);
           final String value = val == null && field.getType().getEnumConstants().length > 0 ? field.getType().getEnumConstants()[0].toString() : "";
           properties.setProperty(propertyKey, val != null ? val.toString() : value);

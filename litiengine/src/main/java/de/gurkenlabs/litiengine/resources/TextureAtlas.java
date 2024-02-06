@@ -1,10 +1,6 @@
 package de.gurkenlabs.litiengine.resources;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import de.gurkenlabs.litiengine.util.io.XmlUtilities;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlElement;
@@ -12,16 +8,18 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 import jakarta.xml.bind.annotation.XmlTransient;
 import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-
-import de.gurkenlabs.litiengine.util.io.FileUtilities;
-import de.gurkenlabs.litiengine.util.io.XmlUtilities;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @XmlRootElement(name = "TextureAtlas")
 public class TextureAtlas {
   private static final Logger log = Logger.getLogger(TextureAtlas.class.getName());
 
   @XmlAttribute(name = "imagePath")
-  private String rawImagePath;
+  private Path rawImagePath;
 
   @XmlAttribute
   private int width;
@@ -32,21 +30,22 @@ public class TextureAtlas {
   @XmlElement(name = "sprite")
   private List<Sprite> sprites;
 
-  private String absoluteImagePath;
+  private Path absoluteImagePath;
 
   TextureAtlas() {
     // keep for serialization
   }
 
-  public static TextureAtlas read(String textureAtlasFile) {
+  public static TextureAtlas read(Path textureAtlasFile) {
     try {
       TextureAtlas atlas = XmlUtilities.read(TextureAtlas.class, Resources.getLocation(textureAtlasFile));
       if (atlas == null) {
         return null;
       }
 
-      String directory = FileUtilities.getParentDirPath(textureAtlasFile);
-      atlas.absoluteImagePath = FileUtilities.combine(directory, atlas.rawImagePath);
+      Path directory = textureAtlasFile.getParent();
+      atlas.absoluteImagePath = Path.of(directory.toString(), atlas.rawImagePath.getFileName().toString());
+
       return atlas;
     } catch (JAXBException e) {
       log.log(Level.SEVERE, String.format("TextureAtlas %s could not be read.", textureAtlasFile), e);
@@ -55,8 +54,8 @@ public class TextureAtlas {
   }
 
   @XmlTransient
-  public String getAbsoluteImagePath() {
-    return this.absoluteImagePath;
+  public Path getAbsoluteImagePath() {
+    return absoluteImagePath;
   }
 
   @XmlTransient
@@ -86,7 +85,7 @@ public class TextureAtlas {
     return this.getSprites().stream().filter(x -> x.getName().equals(name)).findFirst().orElse(null);
   }
 
-  public void setImagePath(String imagePath) {
+  public void setImagePath(Path imagePath) {
     this.rawImagePath = imagePath;
   }
 

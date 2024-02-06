@@ -6,13 +6,13 @@ import de.gurkenlabs.utiliti.components.Editor;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.KeyStroke;
 
-@SuppressWarnings("serial")
 public final class FileMenu extends JMenu {
   private static final Logger log = Logger.getLogger(FileMenu.class.getName());
   private final JMenu recentFiles;
@@ -33,7 +33,7 @@ public final class FileMenu extends JMenu {
     close.addActionListener(a -> Editor.instance().close(false));
     close.setEnabled(false);
     Editor.instance()
-        .onLoaded(() -> close.setEnabled(Editor.instance().getCurrentResourceFile() != null));
+      .onLoaded(() -> close.setEnabled(Editor.instance().getCurrentResourceFile() != null));
 
     this.recentFiles = new JMenu(Resources.strings().get("menu_file_recentFiles"));
     loadRecentFiles();
@@ -68,14 +68,14 @@ public final class FileMenu extends JMenu {
   public void loadRecentFiles() {
     recentFiles.removeAll();
     int added = 0;
-    for (String recent : Editor.preferences().getLastOpenedFiles()) {
-      if (recent != null && !recent.isEmpty() && new File(recent).exists()) {
-        JMenuItem fileButton = new JMenuItem(recent);
+    for (Path recent : Editor.preferences().getLastOpenedFiles()) {
+      if (recent != null && recent.toFile().exists()) {
+        JMenuItem fileButton = new JMenuItem(recent.toString());
         fileButton.addActionListener(
-            a -> {
-              log.log(Level.INFO, "load {0}", fileButton.getText());
-              Editor.instance().load(new File(fileButton.getText()), false);
-            });
+          a -> {
+            log.log(Level.INFO, "load {0}", fileButton.getText());
+            Editor.instance().load(new File(fileButton.getText()), false);
+          });
 
         recentFiles.add(fileButton);
         added++;
@@ -89,12 +89,12 @@ public final class FileMenu extends JMenu {
 
     JMenuItem clear = new JMenuItem(Resources.strings().get("menu_file_clear_recent"));
     clear.addActionListener(
-        a -> {
-          recentFiles.removeAll();
-          Editor.preferences().clearOpenedFiles();
-          Editor.preferences().setLastGameFile(null);
-          recentFiles.setEnabled(false);
-        });
+      a -> {
+        recentFiles.removeAll();
+        Editor.preferences().clearOpenedFiles();
+        Editor.preferences().setLastGameFile(null);
+        recentFiles.setEnabled(false);
+      });
 
     recentFiles.addSeparator();
     recentFiles.add(clear);

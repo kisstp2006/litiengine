@@ -9,6 +9,7 @@ import de.gurkenlabs.litiengine.util.io.FileUtilities;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.awt.image.RasterFormatException;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -36,10 +37,10 @@ public final class Spritesheet implements Comparable<Spritesheet> {
    * @param spriteHeight the height in pixels of each sprite in the spritesheet.
    */
   public Spritesheet(
-    final BufferedImage image, final String path, final int spriteWidth, final int spriteHeight) {
-    checkImage(image, path);
+    final BufferedImage image, final Path path, final int spriteWidth, final int spriteHeight) {
+    checkImage(image, path.getFileName().toString());
     this.image = image;
-    this.name = FileUtilities.getFileName(path);
+    this.name = path.getFileName().toString();
     this.checkHeight(spriteHeight);
     this.checkWidth(spriteWidth);
 

@@ -14,6 +14,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -133,15 +134,11 @@ public final class Spritesheets {
    * @param spriteInfoFile The path to the sprite info file.
    * @return A list of spritesheets that were loaded from the info file.
    */
-  public List<Spritesheet> loadFrom(final String spriteInfoFile) {
+  public List<Spritesheet> loadFrom(final Path spriteInfoFile) {
 
     final ArrayList<Spritesheet> sprites = new ArrayList<>();
-    final InputStream fileStream = Resources.get(spriteInfoFile);
-    if (fileStream == null) {
-      return sprites;
-    }
+    try (InputStream fileStream = Resources.get(spriteInfoFile); BufferedReader br = new BufferedReader(new InputStreamReader(fileStream))) {
 
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(fileStream))) {
       String line;
       while ((line = br.readLine()) != null) {
 
@@ -159,14 +156,13 @@ public final class Spritesheets {
           continue;
         }
 
-        getSpriteSheetFromSpriteInfoLine(FileUtilities.getParentDirPath(spriteInfoFile), sprites, items, parts);
+        getSpriteSheetFromSpriteInfoLine(spriteInfoFile.getParent(), sprites, items, parts);
       }
 
       log.log(Level.INFO, "{0} spritesheets loaded from {1}", new Object[] {sprites.size(), spriteInfoFile});
-    } catch (final IOException e) {
+    } catch (IOException e) {
       log.log(Level.SEVERE, e.getMessage(), e);
     }
-
     return sprites;
   }
 
@@ -218,6 +214,10 @@ public final class Spritesheets {
     return new Spritesheet(Resources.images().get(path, true), path, spriteWidth, spriteHeight);
   }
 
+  public Spritesheet load(final Path path, final int spriteWidth, final int spriteHeight) {
+    return new Spritesheet(Resources.images().get(path, true), path, spriteWidth, spriteHeight);
+  }
+
   public Spritesheet remove(final String path) {
     Spritesheet spriteToRemove = this.loadedSpritesheets.remove(path);
     customKeyFrameDurations.remove(path);
@@ -241,9 +241,9 @@ public final class Spritesheets {
     return null;
   }
 
-  private void getSpriteSheetFromSpriteInfoLine(String baseDirectory, ArrayList<Spritesheet> sprites, List<String> items, String[] parts) {
+  private void getSpriteSheetFromSpriteInfoLine(Path baseDirectory, ArrayList<Spritesheet> sprites, List<String> items, String[] parts) {
     try {
-      final String name = baseDirectory + items.get(0);
+      final Path name = Path.of(baseDirectory.toString(), items.get(0));
 
       final int width = Integer.parseInt(items.get(1));
       final int height = Integer.parseInt(items.get(2));

@@ -1,17 +1,18 @@
 package de.gurkenlabs.litiengine.util.io;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 public final class FileUtilities {
   private static final Logger log = Logger.getLogger(FileUtilities.class.getName());
@@ -23,76 +24,49 @@ public final class FileUtilities {
     throw new UnsupportedOperationException();
   }
 
-  public static boolean deleteDir(final File dir) {
-    if (dir.isDirectory()) {
-      final String[] children = dir.list();
-      for (int i = 0; i < children.length; i++) {
-        final boolean success = deleteDir(new File(dir, children[i]));
-        if (!success) {
-          return false;
-        }
-      }
+  public static void deleteDir(final Path dir) {
+    if (Files.notExists(dir)) {
+      log.log(Level.WARNING, "Tried to delete directory {0} - not found.", dir);
+      return;
     }
-
-    try {
-      Files.delete(dir.toPath().toAbsolutePath());
+    try (Stream<Path> pathStream = Files.walk(dir)) {
+      pathStream.sorted(Comparator.reverseOrder()).forEach(f -> {
+        try {
+          Files.delete(f);
+        } catch (IOException e) {
+          log.log(Level.SEVERE, e.getMessage(), e);
+        }
+      });
     } catch (IOException e) {
       log.log(Level.SEVERE, e.getMessage(), e);
-      return false;
     }
-
-    return true;
   }
 
-  public static List<String> findFilesByExtension(
-      final List<String> fileNames, final Path dir, final String extension) {
-    try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
-      for (final Path path : stream) {
-        if (path.toFile().isDirectory()) {
-          if (isBlackListedDirectory(path)) {
-            continue;
-          }
-
-          findFilesByExtension(fileNames, path, extension);
-        } else if (path.toAbsolutePath().toString().endsWith(extension)) {
-          fileNames.add(path.toAbsolutePath().toString());
-        }
-      }
-    } catch (final IOException e) {
+  /**
+   * Recursively searches for files with specific names or extensions in a given directory. You can either specify a file name such as "file.txt" or a
+   * file extension such as ".txt" or even just "txt" because matches are determined using {@link java.lang.String#endsWith}. This search is not
+   * case-sensitive.
+   *
+   * @param dir   the directory to start the search from. It's a {@link java.nio.file.Path} object.
+   * @param files the names or file extensions of the files to search for. It's a varargs parameter, so you can specify multiple file names or
+   *              extensions.
+   * @return a list of {@link java.nio.file.Path} objects representing the absolute paths of the found files. If an IOException occurs during the
+   * search, it logs the exception and returns an empty list.
+   */
+  public static List<Path> findFiles(final Path dir, final String... files) {
+    try (Stream<Path> pathStream = Files.find(dir, Integer.MAX_VALUE,
+      (path, attr) -> !isBlackListedDirectory(path)
+        && Files.isRegularFile(path)
+        && Arrays.stream(files).map(String::toLowerCase).anyMatch(file -> path.toString().toLowerCase().endsWith(file)))) {
+      return pathStream.toList();
+    } catch (IOException e) {
       log.log(Level.SEVERE, e.getMessage(), e);
+      return List.of();
     }
-
-    return fileNames;
   }
 
-  public static List<String> findFiles(
-      final List<String> fileNames, final Path dir, final String... files) {
-    try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
-      for (final Path path : stream) {
-        if (path.toFile().isDirectory()) {
-          if (isBlackListedDirectory(path)) {
-            continue;
-          }
-
-          findFiles(fileNames, path, files);
-        } else {
-          for (final String file : files) {
-            if (path.toAbsolutePath().toString().endsWith(file)) {
-
-              fileNames.add(path.toAbsolutePath().toString());
-            }
-          }
-        }
-      }
-    } catch (final IOException e) {
-      log.log(Level.SEVERE, e.getMessage(), e);
-    }
-
-    return fileNames;
-  }
-
-  public static String getExtension(final File file) {
-    return getExtension(file.getAbsolutePath());
+  public static String getExtension(final Path file) {
+    return getExtension(file.getFileName());
   }
 
   public static String getExtension(final String path) {
@@ -117,9 +91,9 @@ public final class FileUtilities {
 
   public static String getFileName(final String path, boolean extension) {
     if (path == null
-        || path.isEmpty()
-        || path.endsWith(FILE_SEPARATOR_WIN)
-        || path.endsWith(FILE_SEPARATOR)) {
+      || path.isEmpty()
+      || path.endsWith(FILE_SEPARATOR_WIN)
+      || path.endsWith(FILE_SEPARATOR)) {
       return "";
     }
 
@@ -145,33 +119,12 @@ public final class FileUtilities {
     return name;
   }
 
-  public static String getParentDirPath(final String uri) {
-    if (uri == null || uri.isEmpty()) {
-      return uri;
-    }
-
-    try {
-      return getParentDirPath(new URI(uri));
-    } catch (URISyntaxException e) {
-      String parent = new File(uri).getParent();
-      parent += File.separator;
-      return parent;
-    }
-  }
-
-  public static String getParentDirPath(final URI uri) {
-    URI parent = uri.getPath().endsWith(FILE_SEPARATOR) ? uri.resolve("..") : uri.resolve(".");
-    return parent.toString();
-  }
 
   /**
-   * This method combines the specified basepath with the parts provided as arguments. The output will use the path
-   * separator of the current system;
+   * This method combines the specified basepath with the parts provided as arguments. The output will use the path separator of the current system;
    *
-   * @param basePath
-   *          The base path for the combined path.
-   * @param paths
-   *          The parts of the path to be constructed.
+   * @param basePath The base path for the combined path.
+   * @param paths    The parts of the path to be constructed.
    * @return The combined path.
    */
   public static String combine(String basePath, final String... paths) {
@@ -198,13 +151,7 @@ public final class FileUtilities {
   }
 
   private static boolean isBlackListedDirectory(Path path) {
-    for (final String black : DIR_BLACKLIST) {
-      if (path.toAbsolutePath().toString().contains(black)) {
-        return true;
-      }
-    }
-
-    return false;
+    return Arrays.stream(DIR_BLACKLIST).anyMatch(black -> path.toAbsolutePath().toString().contains(black));
   }
 
   public static String humanReadableByteCount(long bytes) {
@@ -213,8 +160,9 @@ public final class FileUtilities {
 
   public static String humanReadableByteCount(long bytes, boolean decimal) {
     int unit = decimal ? 1000 : 1024;
-    if (bytes < unit)
+    if (bytes < unit) {
       return bytes + " bytes";
+    }
     int exp = (int) (Math.log(bytes) / Math.log(unit));
     String pre = new String[] {"K", "M", "G", "T", "P", "E"}[exp - 1];
     pre = decimal ? pre : pre + "i";

@@ -3,6 +3,8 @@ package de.gurkenlabs.litiengine.environment.tilemap.xml;
 import java.awt.Dimension;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -313,11 +315,11 @@ public class Tileset extends CustomPropertyProvider implements ITileset {
   }
 
   public void saveSource(String basePath) {
-    if (this.sourceTileset == null) {
+    if (sourceTileset == null) {
       return;
     }
 
-    XmlUtilities.save(this.sourceTileset, FileUtilities.combine(basePath, this.source), FILE_EXTENSION);
+    XmlUtilities.save(sourceTileset, Path.of(basePath,source), FILE_EXTENSION);
   }
 
   public boolean isExternal() {

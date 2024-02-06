@@ -10,6 +10,7 @@ import de.gurkenlabs.utiliti.swing.UI;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class Program {
@@ -54,9 +55,9 @@ public class Program {
             // load up previously opened project file or the one that is specified in
             // the command line arguments
             handleArgs(args);
-            String gameFile = Editor.preferences().getLastGameFile();
-            if (!Editor.instance().fileLoaded() && gameFile != null && !gameFile.isEmpty()) {
-              Editor.instance().load(new File(gameFile.trim()), false);
+            Path gameFile = Editor.preferences().getLastGameFile();
+            if (!Editor.instance().fileLoaded() && gameFile != null) {
+              Editor.instance().load(gameFile.toFile(), false);
             }
           },
           args);

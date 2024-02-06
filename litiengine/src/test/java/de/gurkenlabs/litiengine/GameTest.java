@@ -24,7 +24,7 @@ public class GameTest {
 
   @AfterEach
   public void cleanup() {
-    final File configFile = new File(Game.config().getFileName());
+    final File configFile = new File(Game.config().getFilePath());
     if (configFile.exists()) {
       configFile.delete();
     }
